@@ -196,8 +196,13 @@ async function setupSessionStore() {
   }
 
   // Start the server
-  const port = 5000;
-  server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
-    log(`Serving on port ${port}`);
+  // const port = 5000;
+  // server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+  //   log(`Serving on port ${port}`);
+  const port = process.env.PORT || 5000;
+
+server.listen({ port: Number(port), host: "0.0.0.0" }, () => {
+  log(`✅ Server running on port ${port}`);
+});
   });
 })();
