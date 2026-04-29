@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-
 import { importMedicinesFromCSV } from "./csv-import";
 import { importMedicinesFromExcel } from "./excel-import";
 import session from "express-session";
@@ -11,23 +10,19 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ✅ Load ENV properly (only once)
-dotenv.config();
-
-// Fix __dirname for ES modules
+// ✅ Fix __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Optional: load .env from root
+// ✅ Load ENV (ONLY ONCE)
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // Debug logs
 console.log("✅ ENV CHECK");
 console.log("MONGODB_URI:", process.env.MONGODB_URI ? "Loaded" : "Missing");
-console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Loaded" : "Missing");
 console.log("SESSION_SECRET:", process.env.SESSION_SECRET ? "Loaded" : "Missing");
 
-// Validate session secret
+// ✅ Session secret
 const sessionSecret = process.env.SESSION_SECRET;
 if (!sessionSecret) {
   throw new Error("❌ SESSION_SECRET must be set in environment variables");
@@ -47,12 +42,8 @@ async function initializeMongoDB() {
       global.useMongoStorage = true;
       console.log("✅ Using MongoDB");
 
-      try {
-        await optimizeDatabaseForLargeDatasets();
-        console.log("✅ DB optimized (700k+ support)");
-      } catch (err: any) {
-        console.error("❌ Index optimization failed:", err?.message);
-      }
+      await optimizeDatabaseForLargeDatasets();
+      console.log("✅ DB optimized");
     } else {
       global.useMongoStorage = false;
       console.log("⚠️ Using memory storage");
@@ -66,16 +57,12 @@ async function initializeMongoDB() {
 // ---------------- Data Import ----------------
 async function importMedicineData() {
   try {
-    const excelSuccess = await importMedicinesFromExcel();
-    if (excelSuccess) {
+    if (await importMedicinesFromExcel()) {
       console.log("✅ Excel import success");
       return;
     }
 
-    console.log("⚠️ Excel failed, trying CSV...");
-
-    const csvSuccess = await importMedicinesFromCSV();
-    if (csvSuccess) {
+    if (await importMedicinesFromCSV()) {
       console.log("✅ CSV import success");
       return;
     }
@@ -88,30 +75,19 @@ async function importMedicineData() {
 
 // ---------------- Session Store ----------------
 async function setupSessionStore() {
-  try {
-    if (!process.env.MONGODB_URI) {
-      console.log("⚠️ Using memory session store");
-      return undefined;
-    }
-
-    const store = MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      dbName: "pillnow",
-      collectionName: "sessions",
-      ttl: 7 * 24 * 60 * 60,
-      autoRemove: "native",
-      touchAfter: 3600,
-      crypto: {
-        secret: sessionSecret!,
-      },
-    });
-
-    console.log("✅ Mongo session store ready");
-    return store;
-  } catch (err) {
-    console.error("❌ Session store failed:", err);
+  if (!process.env.MONGODB_URI) {
+    console.log("⚠️ Using memory session store");
     return undefined;
   }
+
+  return MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    dbName: "pillnow",
+    collectionName: "sessions",
+    ttl: 7 * 24 * 60 * 60,
+    autoRemove: "native",
+    crypto: { secret: sessionSecret! },
+  });
 }
 
 // ---------------- MAIN ----------------
@@ -130,15 +106,15 @@ async function setupSessionStore() {
     session({
       name: "pillnow.sid",
       secret: sessionSecret!,
-      resave: false, // ✅ FIXED (was true - causes issues)
-      saveUninitialized: false, // ✅ FIXED
+      resave: false,
+      saveUninitialized: false,
       store: sessionStore,
       rolling: true,
       cookie: {
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000,
         sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
       },
     })
   );
@@ -153,7 +129,7 @@ async function setupSessionStore() {
       const duration = Date.now() - start;
 
       if (req.path.startsWith("/api")) {
-        log(`${req.method} ${req.path} ${res.statusCode} - ${duration}ms`);
+        console.log(`${req.method} ${req.path} ${res.statusCode} - ${duration}ms`);
       }
 
       return originalJson(body);
@@ -173,13 +149,13 @@ async function setupSessionStore() {
     });
   });
 
-  // ---------------- Vite / Static ----------------
- console.log("✅ API-only backend running");
+  // ✅ API only
+  console.log("✅ API-only backend running");
 
   // ---------------- Start Server ----------------
   const port = Number(process.env.PORT) || 5000;
 
   server.listen(port, "0.0.0.0", () => {
-    log(`✅ Server running on port ${port}`);
+    console.log(`🚀 Server running on port ${port}`);
   });
 })();
