@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+
 import { importMedicinesFromCSV } from "./csv-import";
 import { importMedicinesFromExcel } from "./excel-import";
 import session from "express-session";
@@ -174,11 +174,7 @@ async function setupSessionStore() {
   });
 
   // ---------------- Vite / Static ----------------
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+ console.log("✅ API-only backend running");
 
   // ---------------- Start Server ----------------
   const port = Number(process.env.PORT) || 5000;
