@@ -22,53 +22,67 @@ export default function AddressMap({
   onMarkerDragEnd,
   draggable = false
 }: AddressMapProps) {
+
+  // ✅ FIXED: removed invalid "loading"
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
-    libraries,
-    loading: "async"
+    libraries
   });
 
   const [center, setCenter] = useState<google.maps.LatLngLiteral | null>(
-    address.lat && address.lng 
-      ? { lat: address.lat, lng: address.lng } 
+    address?.lat && address?.lng
+      ? { lat: address.lat, lng: address.lng }
       : null
   );
 
-  // Update center when address changes
+  // ✅ Update center when address changes
   useEffect(() => {
-    if (address.lat && address.lng) {
+    if (address?.lat && address?.lng) {
       setCenter({ lat: address.lat, lng: address.lng });
-    } else if (address.formattedAddress && !center) {
-      // Geocode the address if needed
-      if (isLoaded && window.google) {
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ address: address.formattedAddress }, (results, status) => {
-          if (status === "OK" && results && results[0] && results[0].geometry && results[0].geometry.location) {
+    } else if (address?.formattedAddress && isLoaded && window.google) {
+      const geocoder = new google.maps.Geocoder();
+
+      geocoder.geocode(
+        { address: address.formattedAddress },
+        (results, status) => {
+          if (
+            status === "OK" &&
+            results &&
+            results[0]?.geometry?.location
+          ) {
             const location = results[0].geometry.location;
-            setCenter({ lat: location.lat(), lng: location.lng() });
+            setCenter({
+              lat: location.lat(),
+              lng: location.lng()
+            });
           }
-        });
-      }
+        }
+      );
     }
   }, [address, isLoaded]);
 
-  const handleMarkerDragEnd = useCallback((event: google.maps.MapMouseEvent) => {
-    if (event.latLng && onMarkerDragEnd) {
-      const newPosition = {
-        lat: event.latLng.lat(),
-        lng: event.latLng.lng()
-      };
-      onMarkerDragEnd(newPosition);
-    }
-  }, [onMarkerDragEnd]);
+  // ✅ Handle marker drag
+  const handleMarkerDragEnd = useCallback(
+    (event: google.maps.MapMouseEvent) => {
+      if (event.latLng && onMarkerDragEnd) {
+        onMarkerDragEnd({
+          lat: event.latLng.lat(),
+          lng: event.latLng.lng()
+        });
+      }
+    },
+    [onMarkerDragEnd]
+  );
 
+  // ❌ Error state
   if (loadError) {
     return <div className="text-red-500">Error loading maps</div>;
   }
 
+  // ⏳ Loading state
   if (!isLoaded) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center bg-gray-100 rounded-md"
         style={{ height, width }}
       >
@@ -77,9 +91,10 @@ export default function AddressMap({
     );
   }
 
+  // ⚠️ No location
   if (!center) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center bg-gray-100 rounded-md"
         style={{ height, width }}
       >
@@ -88,13 +103,18 @@ export default function AddressMap({
     );
   }
 
+  // ✅ Map render
   return (
     <div style={{ height, width }}>
       <GoogleMap
-        mapContainerStyle={{ height: '100%', width: '100%', borderRadius: '0.375rem' }}
+        mapContainerStyle={{
+          height: '100%',
+          width: '100%',
+          borderRadius: '0.375rem'
+        }}
         center={center}
         zoom={zoom}
-        options={{ 
+        options={{
           disableDefaultUI: true,
           zoomControl: true,
           fullscreenControl: true,
@@ -102,13 +122,11 @@ export default function AddressMap({
           streetViewControl: false
         }}
       >
-        {center && (
-          <Marker
-            position={center}
-            draggable={draggable}
-            onDragEnd={handleMarkerDragEnd}
-          />
-        )}
+        <Marker
+          position={center}
+          draggable={draggable}
+          onDragEnd={handleMarkerDragEnd}
+        />
       </GoogleMap>
     </div>
   );
