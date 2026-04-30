@@ -1,22 +1,40 @@
-const API = import.meta.env.VITE_API_URL;
+// 🔐 API Base URL (SAFE FALLBACK)
+const API = import.meta.env.VITE_API_URL || "https://api.pillnow.in";
 
-// 🔐 Safe fetch wrapper (handles errors)
-const safeFetch = async (url: string) => {
+// 🔐 Safe fetch wrapper (with timeout + logs)
+const safeFetch = async (url: string, options: RequestInit = {}) => {
   try {
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
 
     if (!res.ok) {
-      console.error("API Error:", res.status, url);
-      throw new Error("API request failed");
+      console.error("❌ API Error:", res.status, url);
+      return null;
     }
 
     return await res.json();
-  } catch (error) {
-    console.error("Fetch failed:", error);
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.error("⏱️ API Timeout:", url);
+    } else {
+      console.error("❌ Fetch failed:", error);
+    }
     return null;
   }
 };
 
+// 🚀 CENTRAL API SERVICE
 export const api = {
   // ✅ Get all products
   getProducts: async () => {
@@ -30,8 +48,16 @@ export const api = {
     return data || { categories: [] };
   },
 
+  // ✅ Get single product (IMPORTANT FIX for your 404 issue)
+  getProductById: async (id: number | string) => {
+    const data = await safeFetch(`${API}/api/products/${id}`);
+    return data || null;
+  },
+
   // ✅ Search products (frontend filtering)
   searchProducts: async (query: string) => {
+    if (!query) return [];
+
     const data = await safeFetch(`${API}/api/products`);
 
     const products = Array.isArray(data?.products) ? data.products : [];
@@ -39,5 +65,5 @@ export const api = {
     return products.filter((item: any) =>
       item?.name?.toLowerCase().includes(query.toLowerCase())
     );
-  }
+  },
 };
