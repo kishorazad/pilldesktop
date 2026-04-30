@@ -1,17 +1,43 @@
 const API = import.meta.env.VITE_API_URL;
 
+// 🔐 Safe fetch wrapper (handles errors)
+const safeFetch = async (url: string) => {
+  try {
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      console.error("API Error:", res.status, url);
+      throw new Error("API request failed");
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error("Fetch failed:", error);
+    return null;
+  }
+};
+
 export const api = {
+  // ✅ Get all products
   getProducts: async () => {
-    const res = await fetch(`${API}/api/products`);
-    return res.json();
+    const data = await safeFetch(`${API}/api/products`);
+    return data || { products: [] };
   },
 
-  searchProducts: async (query: string) => {
-    const res = await fetch(`${API}/api/products`);
-    const data = await res.json();
+  // ✅ Get categories
+  getCategories: async () => {
+    const data = await safeFetch(`${API}/api/categories`);
+    return data || { categories: [] };
+  },
 
-    return (data.products || []).filter((item: any) =>
-      item.name.toLowerCase().includes(query.toLowerCase())
+  // ✅ Search products (frontend filtering)
+  searchProducts: async (query: string) => {
+    const data = await safeFetch(`${API}/api/products`);
+
+    const products = Array.isArray(data?.products) ? data.products : [];
+
+    return products.filter((item: any) =>
+      item?.name?.toLowerCase().includes(query.toLowerCase())
     );
   }
 };
