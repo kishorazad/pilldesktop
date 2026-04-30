@@ -147,7 +147,8 @@ const FeaturedProductsSlider: React.FC<FeaturedProductsSliderProps> = ({
         
         // Prefetch the product detail API endpoints
         displayProducts.slice(0, 3).forEach(product => {
-          preload.json(`/api/products/${product.id}`);
+         preload.json(`${import.meta.env.VITE_API_URL}/api/products/${product.id}`); 
+          
         });
       }
     }
