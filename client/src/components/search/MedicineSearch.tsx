@@ -323,15 +323,24 @@ const MedicineSearch: React.FC = () => {
 
       setLoading(true);
       try {
-        const API = import.meta.env.VITE_API_URL;
+        // const API = import.meta.env.VITE_API_URL;
 
-        const response = await fetch(`${API}/api/products`);
-        const data = await response.json();
+        // const response = await fetch(`${API}/api/products`);
+        // const data = await response.json();
 
-        const filtered = (data.products || []).filter((item: any) =>
-          item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-        );
+        // const filtered = (data.products || []).filter((item: any) =>
+        //   item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        // );
+const response = await fetch(`${API}/api/products`);
+if (!response.ok) throw new Error("API failed");
 
+const data = await response.json();
+
+const products = Array.isArray(data.products) ? data.products : [];
+
+const filtered = products.filter((item: any) =>
+  item.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+);
         setResults(filtered);
         setShowResults(true);
       } catch (error) {
@@ -368,6 +377,7 @@ const MedicineSearch: React.FC = () => {
       const API = import.meta.env.VITE_API_URL;
 
       const response = await fetch(`${API}/api/products`);
+      
       const data = await response.json();
 
       const filtered = (data.products || []).filter((item: any) =>
