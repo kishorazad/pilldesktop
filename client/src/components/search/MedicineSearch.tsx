@@ -259,6 +259,8 @@ import { Search, X } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useDebounce } from '@/hooks/use-debounce';
 import { getSafeImageUrl } from '@/utils/imageUtils';
+import { api } from '@/lib/api';
+
 
 interface SearchResult {
   id: number;
