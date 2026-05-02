@@ -1,11 +1,11 @@
-// 🔐 API Base URL (SAFE FALLBACK)
+// 🔐 API Base URL
 const API = import.meta.env.VITE_API_URL || "https://api.pillnow.in";
 
-// 🔐 Safe fetch wrapper (with timeout + logs)
+// 🔐 Safe fetch wrapper
 const safeFetch = async (url: string, options: RequestInit = {}) => {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     const res = await fetch(url, {
       ...options,
@@ -26,7 +26,7 @@ const safeFetch = async (url: string, options: RequestInit = {}) => {
     return await res.json();
   } catch (error: any) {
     if (error.name === "AbortError") {
-      console.error("⏱️ API Timeout:", url);
+      console.error("⏱️ Timeout:", url);
     } else {
       console.error("❌ Fetch failed:", error);
     }
@@ -34,7 +34,7 @@ const safeFetch = async (url: string, options: RequestInit = {}) => {
   }
 };
 
-// 🚀 CENTRAL API SERVICE
+// 🚀 API SERVICE
 export const api = {
   // ✅ Get all products
   getProducts: async () => {
@@ -48,22 +48,23 @@ export const api = {
     return data || { categories: [] };
   },
 
-  // ✅ Get single product (IMPORTANT FIX for your 404 issue)
+  // ⚠️ FIXED: Get product by ID (NO API CALL)
   getProductById: async (id: number | string) => {
-    const data = await safeFetch(`${API}/api/products/${id}`);
-    return data || null;
+    const data = await safeFetch(`${API}/api/products`);
+    const products = Array.isArray(data?.products) ? data.products : [];
+
+    return products.find((p: any) => String(p.id) === String(id)) || null;
   },
 
   // ✅ Search products (frontend filtering)
   searchProducts: async (query: string) => {
-    if (!query) return [];
+    if (!query.trim()) return [];
 
     const data = await safeFetch(`${API}/api/products`);
-
     const products = Array.isArray(data?.products) ? data.products : [];
 
     return products.filter((item: any) =>
-      item?.name?.toLowerCase().includes(query.toLowerCase())
+      item?.name?.toLowerCase().includes(query.toLowerCase().trim())
     );
   },
 };
