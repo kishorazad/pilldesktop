@@ -774,6 +774,7 @@ const MedicineSearch: React.FC = () => {
 
       if (query.length < 1) {
         setResults([]);
+        setShowResults(false);
         return;
       }
 
